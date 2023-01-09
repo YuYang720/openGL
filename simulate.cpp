@@ -115,25 +115,35 @@ GLfloat yfloor_ambient[] = {0.9f, 0.9f, 0.9f, 1.0f};
 GLfloat yfloor_specular[] = {0.0f, 0.0f, 0.0f, 1.0f};
 
 /*--------------light source properties ------------*/
+// spot light (example)
 float light_diffuse[] = {0.8, 0.4, 0.4, 1.0};
 float light_specular[] = {0.7, 0.7, 0.7, 1.0};
 float light_ambient[] = {0.1, 0.1, 0.1, 1.0};
 
-// spot light
 float light_position[] = {10.0, 14.0, 10.0, 1.0}; 
 float light_direction[] = {-1.0, -1.0, -1.0, 0.0};
 float light_cutoff = 60.0;
 float light_exponent = 8.0;
 
 // point light located at a fixed position in the scene
-float light1_position[] = {-0.5, 1.0, -2.0, 1.0}; // (x,y,z,'1') positional light
-float light1_diffuse[] = {0.95, 0.95, 0.95, 1.0}; // original:(0.7, 0.7, 0.0, 1.0);
+float light1_position[] = {-0.5, 1.0, -2.0, 1.0}; 
+float light1_diffuse[] = {0.95, 0.95, 0.95, 1.0}; 
 float light1_specular[] = {0.5, 0.5, 0.5, 1.0};
 
 // directional light
 float light2_direction[] = {-2.0, -2.0, 1.0, 0.0};
 float light2_diffuse[] = {0.95, 0.95, 0.95, 1.0};
 float light2_specular[] = {0.5, 0.5, 0.5, 1.0};
+
+// spot light 
+float light3_diffuse[] = {0.8, 0.4, 0.4, 1.0};
+float light3_specular[] = {0.7, 0.7, 0.7, 1.0};
+float light3_ambient[] = {0.1, 0.1, 0.1, 1.0};
+
+float light3_position[] = {0.0, 0.0, 0.0, 1.0}; 
+float light3_direction[] = {1.0, 1.0, 1.0, 0.0};
+float light3_cutoff = 60.0;
+float light3_exponent = 8.0;
 
 
 float global_ambient[] = {0.2, 0.2, 0.2, 1.0};
@@ -155,6 +165,9 @@ int move_Z_direction = 0;
 
 /*---------------idle---------------*/
 float fraction;
+float x_in_idle_transition;
+float z_in_idle_transition;
+
 int frame_per_idle = 100;
 int frame_count;
 
@@ -200,12 +213,11 @@ void draw_eye_coordinate();
 
 void light1_fixed_in_eye();
 void light2_fixed_in_world();
+void light3_attach_robot();
 void rotate_light0_position();
 
 void draw_cube();
-void draw_floor();
-void draw_axes();
-void draw_obstacles();
+void draw_environment();
 void draw_head();
 void draw_body();
 void draw_upper_arm();
@@ -232,6 +244,26 @@ void light1_fixed_in_eye()
 void light2_fixed_in_world()
 {
     glLightfv(GL_LIGHT2, GL_POSITION, light2_direction);
+}
+
+void light3_attach_robot()
+{
+    glPushMatrix();
+    glTranslatef(robot_position[0], robot_position[1], robot_position[2]);
+    glTranslatef(x_in_idle_transition, 0, z_in_idle_transition);
+    glTranslatef(0.5, 2 * head_radius + body_length + thigh_length + calf_length, 0.8);
+
+    glPushMatrix();
+    glTranslatef(light3_position[0], light3_position[1], light3_position[2]);
+    glColor3f(1.0, 1.0, 1.0);
+    glutWireSphere(0.2, 8, 8);
+    glPopMatrix();
+
+    glEnable(GL_LIGHTING);
+    /*----Redefine position and direction of light3-----*/
+    glLightfv(GL_LIGHT3, GL_POSITION, light3_position);
+    glLightfv(GL_LIGHT3, GL_SPOT_DIRECTION, light3_direction);
+    glPopMatrix();
 }
 
 void rotate_light0_position()
@@ -515,23 +547,15 @@ void draw_calf()
     glPopMatrix();
 }
 
-void draw_floor()
+void draw_environment()
 {
-    /*
-    glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, xfloor_diffuse);
-    glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, xfloor_specular);
-    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, xfloor_ambient);
-    glNormal3f(0.0, 1.0, 0.0);
-    */
+    /*--------------------------draw floor----------------------*/
     for (int i = 0; i < 50; i++)
     {
         for (int j = 0; j < 50; j++)
         {
-            
             if ((i + j) % 2 == 0)
             {
-                //glColor3f(0.0, 0.0, 0.0);
-                
                 glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, xfloor_diffuse);
                 glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, xfloor_specular);
                 glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, xfloor_ambient);
@@ -539,16 +563,12 @@ void draw_floor()
                 
             }    
             else
-            {
-                //glColor3f(1.0, 1.0, 1.0);
-                
+            { 
                 glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, yfloor_diffuse); 
                 glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, yfloor_specular);
                 glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, yfloor_ambient);
-                glNormal3f(0.0, 1.0, 0.0);    
-                
+                glNormal3f(0.0, 1.0, 0.0);       
             }
-            
             glBegin(GL_POLYGON);
             glVertex3f(i, 0.0, j);
             glVertex3f(i, 0.0, j + 1);
@@ -557,10 +577,8 @@ void draw_floor()
             glEnd();
         }
     }
-}
 
-void draw_axes()
-{
+    /*-------------------------draw axes-------------------------------------*/
     // original point
     glPushMatrix();
     glColor3f(0.8, 0.8, 0.8);
@@ -586,10 +604,8 @@ void draw_axes()
     glColor3f(1.0, 1.0, 0.0);
     gluCylinder(cylind, 0.3, 0.3, 12, 12, 3);
     glPopMatrix();
-}
 
-void draw_obstacles()
-{
+    /*------------------------draw obstacles----------------------------------*/
     // rock
     glPushMatrix();
     glTranslatef(3.0, 0, 2.0);
@@ -617,17 +633,16 @@ void draw_obstacles()
     glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, W_plastic_shininess);
     gluCylinder(cylind, 1.0, 0.3, 2, 12, 3);
     glPopMatrix();
+
 }
 
 void draw_physical_scene()
 {
-    
-    draw_floor();
-    draw_axes();
-    draw_obstacles();
+    draw_environment();
+
     fraction = (float)frame_count / frame_per_idle;
-    float x_in_idle_transition = walking * move_X_direction * fraction;
-    float z_in_idle_transition = walking * move_Z_direction * fraction;
+    x_in_idle_transition = walking * move_X_direction * fraction;
+    z_in_idle_transition = walking * move_Z_direction * fraction;
 
     glTranslatef(robot_position[0], robot_position[1], robot_position[2]);
     glTranslatef(x_in_idle_transition, 0, z_in_idle_transition);
@@ -748,22 +763,29 @@ void init()
     glEnable(GL_LIGHT0);  
     glEnable(GL_LIGHT1);
     glEnable(GL_LIGHT2);
+    glEnable(GL_LIGHT3);
 
-    /*----------------spotlight0-------------------*/
+    /*----------------example spot light0-------------------*/
     glLightf(GL_LIGHT0, GL_SPOT_CUTOFF, light_cutoff);
     glLightf(GL_LIGHT0, GL_SPOT_EXPONENT, light_exponent);
     glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse);
     glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular);
-    glLightfv(GL_LIGHT0, GL_POSITION, light_position);
 
     /*---------------point light1-----------------------*/
     glLightfv(GL_LIGHT1, GL_DIFFUSE, light1_diffuse);
     glLightfv(GL_LIGHT1, GL_SPECULAR, light1_specular);
 
-    /*---------------directional light1-----------------------*/
+    /*---------------directional light2-----------------------*/
     glLightfv(GL_LIGHT2, GL_DIFFUSE, light2_diffuse);
     glLightfv(GL_LIGHT2, GL_SPECULAR, light2_specular);
-    //glLightfv(GL_LIGHT2, GL_POSITION, light2_direction);/**/
+    //glLightfv(GL_LIGHT2, GL_POSITION, light2_direction);
+
+    /*---------------spot light3-----------------------------*/
+    glLightf(GL_LIGHT3, GL_SPOT_CUTOFF, light3_cutoff);
+    glLightf(GL_LIGHT3, GL_SPOT_EXPONENT, light3_exponent);
+    glLightfv(GL_LIGHT3, GL_DIFFUSE, light3_diffuse);
+    glLightfv(GL_LIGHT3, GL_SPECULAR, light3_specular);
+    //glLightfv(GL_LIGHT3, GL_POSITION, light3_position);
 
     /*--------------global lighting status--------*/
     glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, GL_TRUE);    /* local viewer */
@@ -1160,6 +1182,14 @@ void normal_key(unsigned char key, int x, int y)
         glDisable(GL_LIGHT2);
         break;
         }
+    case '&':{ // on 3
+        glEnable(GL_LIGHT3);
+        break;
+        }
+    case '*':{ // off 3
+        glDisable(GL_LIGHT3);
+        break;
+        }
 
     // rotate light0 position
     case 'm':{
@@ -1287,24 +1317,28 @@ void make_view(int k)
                   eye_position[0] - w[0], eye_position[1] - w[1], eye_position[2] - w[2],
                   v[0], v[1], v[2]);
         light2_fixed_in_world();
+        light3_attach_robot();
         rotate_light0_position();
         break;
     case 1: /* X direction parallel viewing */
         light1_fixed_in_eye();
         gluLookAt(15.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
         light2_fixed_in_world();
+        light3_attach_robot();
         rotate_light0_position();
         break;
     case 2: /* Y direction parallel viewing */
         light1_fixed_in_eye();
         gluLookAt(0.0, 15.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0);
         light2_fixed_in_world();
+        light3_attach_robot();
         rotate_light0_position();
         break;
     case 3: /* Z direction parallel viewing */
         light1_fixed_in_eye();
         gluLookAt(0.0, 0.0, 15.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
         light2_fixed_in_world();
+        light3_attach_robot();
         rotate_light0_position();
         break;
     }
@@ -1460,14 +1494,6 @@ void display()
         break;
     }
     }
-    /*
-        glMatrixMode(GL_MODELVIEW);
-        glLoadIdentity();
-        gluLookAt(eye_position[0], eye_position[1], eye_position[2],
-                  robot_position[0], robot_position[1], robot_position[2],
-                   0.0, 1.0, 0.0);
-        draw_physical_scene();
-    */
     glutSwapBuffers();
 }
 
