@@ -180,6 +180,11 @@ int status = ON; // Texture mapping status
 // float bill_axe_a[3], bill_axe_b[3];
 float mdv_mtx[16]; // modelview matrix
 
+/*----------------------foggy-----------------------*/
+float fog_color[] = {0.15, 0.20, 0.20, 0.50};
+float fog_density = 0.25;
+
+
 /*--------------------------idle-------------------------------------*/
 float fraction;
 float x_in_idle_transition;
@@ -1326,11 +1331,11 @@ void draw_environment()
     glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_SPHERE_MAP);
     glPopMatrix();
     glMatrixMode(GL_MODELVIEW);
-    */
+    *//*
     glPushMatrix();
     glTranslatef(4, 4, 4);
     glutWireSphere(0.7, 200, 200);
-    glPopMatrix();
+    glPopMatrix();*/
 
     glDisable(GL_TEXTURE_2D);
     /*------------------------draw obstacles----------------------------------*/
@@ -1535,6 +1540,14 @@ void init()
         gluQuadricDrawStyle(disk, GLU_FILL);
         gluQuadricNormals(disk, GLU_SMOOTH);
     }
+
+    /*---------------Set up fog conditions --------------*/
+    glEnable(GL_FOG);               /*enable fog fade */
+    glFogi(GL_FOG_MODE, GL_LINEAR); /*fog factor=GL_LINEAR,GL_EXP,or GL_EXP2*/
+    glFogf(GL_FOG_DENSITY, fog_density);   /*fog opacity(density)= 0.25*/
+    glFogf(GL_FOG_START, 1.0);      /*Setup two ends for GL_LINEAR*/
+    glFogf(GL_FOG_END, 36.0);
+    glFogfv(GL_FOG_COLOR, fog_color); /*set the fog color */
 
     cv = cos(view_degree * PI / 180.0);
     sv = sin(view_degree * PI / 180.0);
@@ -1923,6 +1936,76 @@ void normal_key(unsigned char key, int x, int y)
         break;
     }
 
+    // foggy
+    case 'p':
+    {
+        glEnable(GL_FOG);
+        break;
+    }
+    case 'o':
+    {
+        glDisable(GL_FOG);
+        break;
+    }
+    case 'i':
+    {
+        glFogi(GL_FOG_MODE, GL_LINEAR);
+        break;
+    }
+    case 'u':
+    {
+        glFogi(GL_FOG_MODE, GL_EXP);
+        break;
+    }
+    case 'y':
+    {
+        glFogi(GL_FOG_MODE, GL_EXP2);
+        break;
+    }
+    case '.':
+    { // gray
+        fog_color[0] = 0.3;
+        fog_color[1] = 0.3;
+        fog_color[2] = 0.3;
+        init();
+        break;
+    }
+    case '/':
+    { // red
+        fog_color[0] = 0.95;
+        fog_color[1] = 0.05;
+        fog_color[2] = 0.05;
+        init();
+        break;
+    }
+    case '_':
+    { // green
+        fog_color[0] = 0.05;
+        fog_color[1] = 0.95;
+        fog_color[2] = 0.05;
+        init();
+        break;
+    }
+    case '=':
+    { // blue
+        fog_color[0] = 0.05;
+        fog_color[1] = 0.05;
+        fog_color[2] = 0.95;
+        init();
+        break;
+    }
+    case '+':
+    {
+        if(fog_density < 0.95)
+            fog_density += 0.05;
+        break;
+    }
+    case '-':
+    {
+        if(fog_density > 0.05)
+            fog_density -= 0.05;
+        break;
+    }
     // chang viewport
     case '0':
     {
